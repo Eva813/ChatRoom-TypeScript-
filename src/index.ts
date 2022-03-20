@@ -17,6 +17,13 @@ const io = new Server(server)
 //2. 監測連接
 io.on('connection', (socket) => {
   socket.emit('join', 'Welcom')
+
+  //建立連接時，使用on 對應監聽的頻道 收到chatRoom 的訊息
+  socket.on('chat', (msg) => {
+    console.log('mssege:', msg)
+    //發到後端後，再由後端返回給前端
+    io.emit('chat', msg)
+  })
 })
 
 // 執行npm run dev本地開發 or 執行npm run start部署後啟動線上伺服器
