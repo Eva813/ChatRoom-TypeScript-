@@ -28,9 +28,17 @@ io.on('connection', (socket) => {
       userName,
       roomName
     )
+
+    //soket join 和 to 是對應一起的
+    socket.join(userData.roomName)
+
     //將user 存入
     userService.addUser(userData)
-    io.emit('join', `${userName} join ${roomName}`)
+
+    //運用 socket 的 broadcast 功能
+    //to 就是，我們 socket.join 加入了特定房間，並告訴 socket 就發送到該房間就好
+    socket.broadcast.to(userData.roomName).emit('join', `${userName} join ${roomName}`)
+
   })
 
 
@@ -48,7 +56,7 @@ io.on('connection', (socket) => {
     const userName = userData?.userName
     //接著就是 如果 userName 是有存在，就能發送
     if (userName) {
-      io.emit('leave', `${userData.userName} leave`)
+      socket.broadcast.to(userData.roomName).emit('leave', `${userData.userName} leave`)
     }
     //同時來開的話，後端也要將 user 的資訊 remove 
     userService.removeUser(socket.id)
