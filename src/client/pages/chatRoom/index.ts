@@ -19,6 +19,8 @@ if (!userName || !roomName) {
 //1. 建立連接到 node server
 const clientIo = io();
 
+// clientIo.emit('join', `${userName} join ${roomName}`)
+clientIo.emit('join', { userName, roomName })
 
 const textInput = document.getElementById("textInput") as HTMLInputElement
 const submitButton = document.getElementById("submitBtn") as HTMLButtonElement
@@ -59,6 +61,16 @@ function msgHandler(msg: string) {
 
 }
 
+function roomMsgHandler(msg: string) {
+  const divBox = document.createElement("div")
+  divBox.classList.add('flex', 'justify-center', 'mb-4', 'items-center')
+  divBox.innerHTML = `
+    <p class="text-gray-700 text-sm">${msg}</p>
+  `
+  chatBoard.appendChild(divBox)
+  chatBoard.scrollTop = chatBoard.scrollHeight
+}
+
 submitButton.addEventListener("click", () => {
   const textValue = textInput.value
   //將拿到的 value 推送到後端，透過clientIo 
@@ -66,21 +78,32 @@ submitButton.addEventListener("click", () => {
   clientIo.emit('chat', textValue)
 })
 
+
+
 backButton.addEventListener('click', () => {
   location.href = "/main/main.html"
 })
 
 //建立連接成功，接收後端發過來的訊息
-// clientIo.on('join', (msg) => {
-//   console.log('msg', msg)
-// })
+clientIo.on('join', (msg: string) => {
+  console.log('join', msg);
+  roomMsgHandler(msg)
+})
+
 
 //接收後端返回前端的資訊
 clientIo.on('chat', (msg) => {
   console.log('cliten-msg:', msg)
   msgHandler(msg)
+
+})
+
+clientIo.on('leave', (msg) => {
+  console.log('leave-msg:', msg)
+  roomMsgHandler(msg)
+
 })
 
 
 
-console.log("client side chatroom page", name);
+//console.log("client side chatroom page", name);

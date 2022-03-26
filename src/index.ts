@@ -1,10 +1,11 @@
-import devServer from "./server/dev";
-import prodServer from "./server/prod";
+import devServer from "@/server/dev";
+import prodServer from "@/server/prod";
 import express from "express";
 import { Server } from "socket.io"
 import http from "http"
 
 import { name } from "@/utils";
+import UserService from "@/service/UserService";
 
 
 const port = 3000;
@@ -12,17 +13,46 @@ const app = express();
 //透過 http 將 server 建立起來
 const server = http.createServer(app)
 const io = new Server(server)
+const userService = new UserService
+
+
 
 //當有用戶連接到connection 就會有回呼函式
 //2. 監測連接
 io.on('connection', (socket) => {
-  socket.emit('join', 'Welcom')
+  //socket.emit('join', 'Welcom')
+  socket.on('join', ({ userName, roomName }: { userName: string, roomName: string }) => {
+    //在進入聊天室同時，建立用戶資訊
+    const userData = userService.userDataInfoHandler(
+      socket.id,
+      userName,
+      roomName
+    )
+    //將user 存入
+    userService.addUser(userData)
+    io.emit('join', `${userName} join ${roomName}`)
+  })
+
 
   //建立連接時，使用on 對應監聽的頻道 收到chatRoom 的訊息
   socket.on('chat', (msg) => {
     console.log('mssege:', msg)
-    //發到後端後，再由後端返回給前端
+    //在這裡發到後端後，再由後端返回給前端
     io.emit('chat', msg)
+  })
+
+  //用sokit io 中斷開連結
+  socket.on('disconnect', () => {
+    const userData = userService.getUser(socket.id)
+    //加問號是因為有 null 的型別可能存在
+    const userName = userData?.userName
+    //接著就是 如果 userName 是有存在，就能發送
+    if (userName) {
+      io.emit('leave', `${userData.userName} leave`)
+    }
+    //同時來開的話，後端也要將 user 的資訊 remove 
+    userService.removeUser(socket.id)
+
   })
 })
 
