@@ -6,6 +6,7 @@ import http from "http"
 
 import { name } from "@/utils";
 import UserService from "@/service/UserService";
+import moment from "moment"
 
 
 const port = 3000;
@@ -20,6 +21,8 @@ const userService = new UserService
 //當有用戶連接到connection 就會有回呼函式
 //2. 監測連接
 io.on('connection', (socket) => {
+
+  socket.emit('userID', socket.id)
   //socket.emit('join', 'Welcom')
   socket.on('join', ({ userName, roomName }: { userName: string, roomName: string }) => {
     //在進入聊天室同時，建立用戶資訊
@@ -44,9 +47,15 @@ io.on('connection', (socket) => {
 
   //建立連接時，使用on 對應監聽的頻道 收到chatRoom 的訊息
   socket.on('chat', (msg) => {
+    const time = moment.utc()
     console.log('mssege:', msg)
+    const userData = userService.getUser(socket.id)
+    if (userData) {
+      io.to(userData.roomName).emit('chat', { userData, msg, time })
+    }
+
     //在這裡發到後端後，再由後端返回給前端
-    io.emit('chat', msg)
+    //io.emit('chat', msg)
   })
 
   //用sokit io 中斷開連結
